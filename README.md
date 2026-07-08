@@ -1,56 +1,189 @@
-# How HyperEater works?
+# How HyperEater Trades, In Plain English
 
-## အကျဥ်းချုပ်
+## The one-line version
 
-ကျွန်တော်တို့ Bot က **Mean reversion bot** အမျိုးအစား ဖြစ်ပါတယ်။ ဆိုလိုတာက ဈေးကွက်ကြီး ဘယ်ဘက်ကို ဦးတည်သွားနေလဲ (Trend) ဆိုတာကို ကြိုခန့်မှန်းပြီး လိုက်ဝယ်တဲ့အမျိုးအစား မဟုတ်ပါဘူး။ ဈေးကွက် ငြိမ်နေတဲ့အချိန် (Sideways market) မျိုးမှာ ကွိုင် (Coin) တစ်ခုက ဈေးအရမ်းတက်သွားတာ ဒါမှမဟုတ် အရမ်းကျသွားတာမျိုး ဖြစ်လာရင်၊ အဲ့ဒီကွိုင်က သူ့ရဲ့ ပုံမှန် ဈေးနှုန်းအလယ်မှတ်ကို ပြန်ရောက်လာမယ်လို့ ယူဆပြီး အရောင်းအဝယ် (Trade) လုပ်တာပါ။ 
+HyperEater is a fully mechanical trend-following bot. It does not predict anything
+and it does not use any AI. It watches 21 major crypto markets, waits for a price
+breakout in the direction of an established trend, buys or sells with a small fixed
+risk, cuts losers quickly, and lets the rare big winner run for days or weeks.
 
-ရော်ဘာကြိုး တစ်ချောင်းလို စဉ်းစားကြည့်ပါ။ ရော်ဘာကြိုးကို အတင်းဆွဲဆန့်လိုက်ရင် ဆက်ပြီး ဆန့်ထွက်သွားမှာထက်၊ သူ့ရဲ့ မူလအနေအထားကို ပြန်ရုန်းဖို့ အားပိုများပါတယ်။ အဲ့ဒီ သဘောတရားကို သုံးထားတာပါ။
+Every rule is written in code, tested against 27 months of real market history, and
+applied the same way every time. No opinions, no news reading, no gut feeling.
 
-## ဘာလို့ ဒီနည်းလမ်းကို သုံးတာလဲ (Trend following နောက် မလိုက်ဘဲ)
+## Why we trade this way
 
-ကျွန်တော်တို့ အမှန်တကယ် Trade ခဲ့တဲ့ အကြိမ် ၄၀ ကျော်ရဲ့ ရလဒ်တွေကို ပြန်တိုင်းတာကြည့်ပါတယ်။ အဖြေက ရှင်းပါတယ်။
+We ran an AI-driven version of this bot for eleven weeks with real money. We kept a
+complete record of every decision it made. The verdict was clear: the AI picked
+direction no better than a coin flip, and it cost real money in API fees on top of
+the trading losses. The full record is preserved in the dashboard under
+"Grok era report", every trade, every reason, every dollar.
 
-* ဈေးကွက် ငြိမ်နေတဲ့အချိန် (Range bound market) တွေမှာ **+9.5R** (ရင်းနှီးငွေထက် ၉.၅ ဆ) မြတ်ပါတယ်။
-* ဈေးကွက် လှုပ်ခတ်မှုကြမ်းတဲ့အချိန်၊ အတက်အကျ Trend တွေ ကြမ်းတဲ့အချိန်မှာ **-10.9R** ရှုံးပါတယ်။ 
+Before replacing it, we tested the new mechanical rules against 27 months of price
+history on the same exchange, including all fees and slippage. Only after the rules
+passed that test did we switch the bot over. This document explains those rules.
 
-ဒါကြောင့်မလို့ ဗျူဟာတစ်ခုလုံးကို ရိုးရှင်းတဲ့ စည်းမျဉ်းတစ်ခုတည်းအပေါ်မှာပဲ တည်ဆောက်ထားပါတယ်။ အဲ့ဒါကတော့ **"ကိုယ့်အတွက် အနိုင်သေချာတဲ့ ပွဲမျိုးကိုပဲ ကစားမယ်။ ကိုယ်ရှုံးနိုင်တဲ့ အခြေအနေဆိုရင် ဝင်မပါဘဲ ငြိမ်ငြိမ်လေး နေမယ်"** ဆိုတာပါပဲ။
+## The core idea
 
-## ဈေးကွက်ထဲ ဘယ်အချိန် ဝင်မလဲ (Signal များ)
+Crypto markets spend most of their time going nowhere. Once in a while, a market
+starts a real trend and moves a very long way. Nobody can reliably predict when
+that happens. So instead of predicting, the bot does this:
 
-Trade ဖို့ သင့်မသင့် ဆုံးဖြတ်ဖို့ Technical Indicator တွေနဲ့ AI intel (Grok) ကို ပေါင်းစပ်အသုံးပြုထားပါတယ်။ 
-Indicator တွေက "ဒါဟာ Trade လုပ်ဖို့ ကောင်းတဲ့ အနေအထားလား" ဆိုတာကို ဖြေပေးပြီး၊ AI ကတော့ "ဘယ်ဘက်ကို သွားမလဲ၊ ဒီအခြေအနေကို ပျက်သွားစေနိုင်တဲ့ သတင်းတွေရှိလား" ဆိုတာကို ဆုံးဖြတ်ပေးပါတယ်။
+1. It takes a small, cheap position every time a market pushes into new ground.
+2. If the push fails, it loses a small, known amount and moves on.
+3. If the push turns into a real trend, it stays in and follows it as far as it goes.
 
-အဓိက သုံးတဲ့ Indicator တွေကတော့
+Most attempts fail. That is expected and priced in. Roughly one trade in three or
+four works, and the winners are much larger than the losers. One or two exceptional
+trends a year carry most of the profit. The job of every rule below is either to
+find those trends or to keep the failed attempts cheap.
 
-* **RSI (ဈေးကွက် အခြေအနေ တိုင်းတာတဲ့ဒိုင်ခွက်၊ ၀ မှ ၁၀၀ အထိ):** ၃၀ အောက် ရောက်ရင် (Oversold) လူရောင်းများပြီး ဈေးအရမ်းပေါနေပြီ ဖြစ်လို့ "ဝယ်ဖို့ (Buy ဒါမှမဟုတ် Long)" စဉ်းစားပါတယ်။ ၇၀ အထက် ရောက်ရင် (Overbought) လူဝယ်များပြီး ဈေးအရမ်းကြီးနေပြီ ဖြစ်လို့ "ရောင်းချဖို့ (Sell ဒါမှမဟုတ် Short)" စဉ်းစားပါတယ်။ အလယ်တည့်တည့် (၄၄ ကနေ ၅၆ ကြား) ဆိုရင်တော့ ဈေးကွက်က ပျင်းစရာကောင်းလောက်အောင် ငြိမ်နေတာမို့ AI ခေါ်သုံးရတဲ့ စရိတ်သက်သာအောင် ဘာမှမလုပ်ဘဲ ကျော်သွားပါတယ်။
-* **Bollinger Bands (ရော်ဘာကြိုးရဲ့ အစွန်နှစ်ဖက်):** အောက်ဘက် အစွန်မျဉ်းနား ရောက်မှပဲ **ဝယ် (Buy ဒါမှမဟုတ် Long)** ပြီး၊ အပေါ်ဘက် အစွန်မျဉ်းနား ရောက်မှပဲ **ရောင်း (Sell ဒါမှမဟုတ် Short)** ပါတယ်။ အလယ်မှာရှိနေရင် ဘာမှမလုပ်ပါဘူး။ ဒါဟာ ဈေးကွက် တကယ်ပဲ အစွန်ကို ရောက်နေပြီလား ဆိုတာကို စစ်ဆေးတာပါ။
-* **EMAs (20, 50, 200) ဈေးကွက်ရဲ့ ကျောရိုး:** ဈေးကွက်က တကယ်ပဲ အတက်အကျ Trend ဖြစ်နေတာလား (ရှောင်ရန်)၊ ဒါမှမဟုတ် ငြိမ်နေတာလား (Trade လုပ်ရန်) ဆိုတာကို ပြောပြပါတယ်။
-* **ATR (ဈေးကွက် လှုပ်ခတ်မှု ပေတံ):** ဈေးကွက် ဘယ်လောက်ကြမ်းနေလဲ ဆိုတာကို တိုင်းတာပါတယ်။ ဒီအချက်ကိုကြည့်ပြီး အရှုံးခံနိုင်မယ့်မှတ် (Stop loss) ကို သတ်မှတ်သလို၊ ဈေးကွက် အရမ်းကြမ်းနေရင် ဝင်မtradeဖို့ ဆုံးဖြတ်ပါတယ်။
-* **Funding rate နဲ့ သတင်းများ:** Fundingကြေးတွေ အပြောင်းအလဲ ကြီးကြီးမားမား ဖြစ်မယ့်အချိန်မျိုးကို ရှောင်ပါတယ်။ နောက်ပြီး Grok AI က လက်ရှိဖြစ်ပေါ်နေတဲ့ သတင်းတွေကို အမြဲစောင့်ကြည့်နေတဲ့အတွက်၊ Coin တစ်ခုခုနဲ့ ပတ်သက်ပြီး သတင်းထူးထွက်လို့ ဈေးတက်တာ ကျတာ ဖြစ်နေချိန်မျိုးမှာ Bot က မှားပြီး ဝင်မtradeမိအောင် တားဆီးပေးပါတယ်။
+## Step by step: what the bot does every four hours
 
-## Bot က Trade တစ်ခုကို လက်ခံဖို့ ကျော်ဖြတ်ရမယ့် အဆင့်များ (ဘာလို့ ခဏခဏ Trade မလုပ်ဘဲ ငြင်းတာလဲ)
+The bot works on the 4-hour candle clock. A candle is just the price record of one
+4-hour block. Candles close at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 UTC.
+About two minutes after each close, the bot runs this checklist on all 21 coins.
 
-Trade တစ်ခု မစခင်မှာ အောက်ပါ အဆင့်အားလုံးကို အောင်မြင်စွာ ကျော်ဖြတ်နိုင်မှသာ Bot က အလုပ်လုပ်ပါလိမ့်မယ်။ အများစုကတော့ ဒီအဆင့်တွေမှာတင် အပယ်ခံရပါတယ်။ 
+### Step 1: Is there a trend at all? (the trend gate)
 
-1. **ဈေးကွက် အခြေအနေ (Regime gate):** ဈေးကွက်က ငြိမ်နေတဲ့ ဒါမှမဟုတ် ဘေးတိုက်သွားနေတဲ့ (Sideways) အခြေအနေ ဖြစ်ရပါမယ်။ အတက်အကျ ကြမ်းနေရင် AI ကိုတောင် လှမ်းမမေးတော့ပါဘူး။ (ဒါက ကျွန်တော်တို့ရဲ့ အဓိက အားသာချက်ပါ)
-2. **Band edge gate:** အောက်ဘက်အစွန်မျဉ်း (Lower band) ရောက်မှသာ Long (ဝယ်) ပါမယ်။ အပေါ်ဘက်အစွန်မျဉ်း (Upper band) ရောက်မှသာ Short (ရောင်း) ပါမယ်။
-3. **ဓားပြုတ်ကျတာကို မဖမ်းဘူး (Anti knife gate):** ဈေးတွေ ထိုးကျနေတဲ့အချိန် "ဈေးပေါတယ်" ဆိုပြီး ဝင်မဝယ်ပါဘူး (No catching falling knives)။ ဈေးကျတာ ရပ်တန့်သွားပြီဆိုတာကို 1h နဲ့ 2h Timeframe တွေမှာ သေချာစောင့်ကြည့်ပြီးမှသာ ဝင်ပါတယ်။
-4. **AI ရဲ့ ယုံကြည်မှု (Confidence floor):** Grok AI က ဒီ Trade အပေါ် လုံလောက်တဲ့ ယုံကြည်မှု ရှိရပါမယ်။ 
-5. **အမြတ်က အရှုံးထက် အနည်းဆုံးနှစ်ဆပိုများရမယ် (Reward > Risk 2x):** ဥပမာအားဖြင့် ၁၀ ဒေါ်လာ ရှုံးနိုင်ခြေ (Risk) ရှိတဲ့ ပွဲဆိုရင်၊ အနည်းဆုံး ၂၀ ဒေါ်လာ မြတ်နိုင်ခြေ (Reward) ရှိမှသာ ဝင်tradeပါတယ်။
+The bot compares the current price with two moving averages: the average price of
+the last 50 candles and the last 200 candles (called EMAs, averages that weight
+recent prices more).
 
-## အရင်းအနှီးနဲ့ အရှုံးအမြတ် စီမံခန့်ခွဲခြင်း (Captialကို ဘယ်လိုကာကွယ်သလဲ)
+- Price above the 200 average, and the 50 average also above the 200 average:
+  the market is in an uptrend. The bot is only allowed to buy.
+- Price below the 200 average, and the 50 also below the 200: downtrend.
+  The bot is only allowed to sell short.
+- Anything mixed: no trend. The bot does nothing with that coin.
 
-* **အရင်းအနှီး ခွဲဝေမှု (Position Sizing):** ပွဲတစ်ပွဲအတွက် အကောင့်ထဲက ငွေအနည်းငယ် (၁ ရာခိုင်နှုန်း ခန့်{အခုက ပျှမ်းမျှ 8%}) ကိုသာ Risk ယူပါတယ်။ Trade တစ်ခု မှားသွားရင်တောင် အကောင့်တစ်ခုလုံး မထိခိုက်အောင် ကန့်သတ်ထားတာပါ။
-* **Stop loss နဲ့ Take profit:** ဈေးကွက်ထဲ ဝင်လိုက်တာနဲ့ တစ်ပြိုင်နက် အရှုံးခံမယ့်မှတ် (Stop loss) နဲ့ အမြတ်ယူမယ့်မှတ် (Take profit) ကို အလိုအလျောက် သတ်မှတ်ထားပြီးသား ဖြစ်ပါတယ်။ 
-* **အမြတ်ကို ဖမ်းထားခြင်း (The ratchet ဒါမှမဟုတ် Trailing stop):** ကိုယ်ဝယ်ထားတဲ့အတိုင်း ဈေးတက်လာပြီဆိုပါစို့။ အမြတ်ရလာတာနဲ့အမျှ အရှုံးခံမယ့်မှတ် (Stop loss) ကို အောက်ကနေ တဖြည်းဖြည်း အပေါ်ကို လိုက်တင်သွားပါတယ်။ အမြတ်နည်းနည်း ရလာရင် Stop loss ကို အရင်းမှတ် (Break even) မှာ ထားလိုက်တဲ့အတွက် ရှုံးစရာမရှိတော့ပါဘူး။ ဈေးက ဆက်တက်နေရင် +1R, +2R စသဖြင့် အမြတ်ကို သော့ခတ် သိမ်းဆည်းသွားပါတယ်။ ဒါကြောင့် ဈေးကွက်က ရုတ်တရက် ပြန်ကျလာရင်တောင် ရထားတဲ့ အမြတ်တွေ ပြန်ပါမသွားဘဲ ကိုယ့်ဆီ အမြတ်ကျန်ခဲ့မှာ ဖြစ်ပါတယ်။
+This single rule keeps the bot from fighting the market. It never buys into a
+falling market and never shorts a rising one.
 
-# မကြာသေးခင်က ဘာတွေမှားခဲ့လဲ၊ ဘယ်လို Fix လိုက်လဲ (The Recent Fix)
+### Step 2: Is the market breaking into new ground? (the breakout trigger)
 
-မကြာသေးခင်က Bot Trade ၇ ခုဆက်တိုက်ရှုံးပြီး ၂ ခုက အရင်းပဲ ရတဲ့ အခြေအနေတစ်ခု ကြုံခဲ့ရပါတယ်။ အဲ့ဒီ Trade တွေအားလုံးကိုပြန်စစ်ဆေးကြည့်တဲ့အခါ၊ ဒါဟာ တိုက်ဆိုင်လို့မဟုတ်ဘဲ **System Error (Bug) ၄ ခု ဆင့်ကဲ ဖြစ်သွားလို့** ဆိုတာ ပါဘဲ။ အောက်မှာ ရှင်းပြပေးထားပါတယ်။
+Within an uptrend, the bot waits for the candle to close above the highest price
+of the previous 55 candles, which is roughly the last nine days. Closing above
+that level means the market just did something it could not do for nine days.
+That is the footprint of real buying pressure, and it is how big trends start.
+For downtrends the rule is mirrored: a close below the 55-candle low.
 
-1. **Indicator တွေ အလုပ်မလုပ်တော့ခြင်း:** ကျွန်တော်တို့က ရှေ့က ဈေးကွက်ဒေတာ (Candle) ၁၂ ခုစာလောက်ကိုပဲ ယူသုံးခဲ့မိပါတယ်။ ဒါပေမယ့် EMA200, RSI, ATR စတဲ့ Indicator အကြီးတွေ အလုပ်လုပ်ဖို့က အဲ့ဒီထက်ပိုများတဲ့ ဒေတာတွေ လိုအပ်ပါတယ်။ ဒေတာမလောက်တော့ Indicator တွေက ဘာအဖြေမှ မထုတ်ပေးတော့ဘဲ "ဈေးကွက် အတက်အကျကြမ်းရင် ရှောင်မယ်" ဆိုတဲ့ စနစ်က အလိုအလျောက် ပိတ်သွားပါတယ်။ ဒါကြောင့် Bot က မလုပ်ရမယ့် အချိန်ကြီးမှာ သွားလုပ်မိပြီး ရှုံးခဲ့တာပါ။ **ပြင်ဆင်ချက်:** ဒေတာကို (4h timeframe အတွက်) Candle ၂၁၀ စာအထိ အများကြီး ဆွဲယူလိုက်ပါတယ်။ အခုတော့ စစ်ထုတ်တဲ့ စနစ်တွေ ပြန်လည် အသက်ဝင်သွားပါပြီ။
-2. **အော်ဒါ နှစ်ခါပွင့်သွားတဲ့ ပြဿနာ (Double fill bug) old_case:** ၁၀ ဒေါ်လာပဲ ရှုံးမယ့် Trade တစ်ခုမှာ Exchange ဘက်က အော်ဒါကို နှစ်ခါဖွင့်ပေးလိုက်သလို ဖြစ်သွားလို့ ငွေ ၂၁ ဒေါ်လာ ရှုံးသွားပါတယ်။ Bot သိထားတဲ့ ပမာဏနဲ့ တကယ်ပွင့်နေတဲ့ ပမာဏ မတူတော့လို့ Stop loss က တစ်ဝက်ကိုပဲ ကာကွယ်ပေးနိုင်ခဲ့တာပါ။ **ပြင်ဆင်ချက်:** ကိုယ်ဝင်ချင်တဲ့ ပမာဏကို မမှတ်တော့ဘဲ၊ Exchange ပေါ်မှာ အမှန်တကယ် ပွင့်သွားတဲ့ ပမာဏအတိုင်း အတိအကျ ပြန်ချိန်ကိုက် (Record) လုပ်တဲ့စနစ် ထည့်ထားလိုက်ပါတယ်။
-3. **ဈေးထိုးကျနေတာကို သွားဖမ်းမိခြင်း (Falling knives):** XRP လို Coin တွေ ဈေးဆက်တိုက် ကျနေတဲ့အချိန်မှာ "ဈေးပေါတယ်" ဆိုပြီး Bot က ခဏခဏ ဝင်ဝယ်မိပါတယ်။ **ပြင်ဆင်ချက်:** အပေါ်မှာ ရှင်းပြခဲ့တဲ့ Anti knife gate (ဈေးကျတာ ရပ်သွားဖို့ စောင့်တဲ့ စနစ်) ကို ထည့်သွင်းလိုက်ပါတယ်။
-4. **အရှုံးထဲက သင်ခန်းစာ မယူခြင်း (No memory):** Bot မှာ မှတ်ဉာဏ်မရှိတဲ့အတွက် Trade တစ်ခုကို သီးခြားစီပဲ မြင်ပါတယ်။ ဥပမာအားဖြင့် "BTC ကို Long လိုက်လို့ ရှုံးသွားတယ်" ဆိုရင်တောင်၊ နောက်တစ်ခါ "BTC ကို ထပ် Long မယ်" ဆိုပြီး ချက်ချင်း ထပ်လုပ်ပါတယ်။ **ပြင်ဆင်ချက်:** **Circuit Breaker** (Main ခလုတ်) ထည့်လိုက်ပါတယ်။ Coin တစ်ခုတည်းမှာ ၃ ခါ တိုက်ရိုက်ရှုံးထားရင် ဖြစ်ဖြစ်၊ -2R ရှုံးထားရင် ဖြစ်ဖြစ်၊ အဲ့ဒီ Coin ကို ၂၄ နာရီတိတိ အနားပေးလိုက်ပါတယ်။ အကောင့်တစ်ခုလုံး အရှုံးများနေရင်လည်း အကုန်လုံးကို ရပ်နားထားပါမယ်။ အခုတော့ Bot က အရှုံးတွင်းနက်နေချိန်မှာ ဆက်မတူးတော့ဘဲ ရပ်တန့်တတ်သွားပါပြီ။
+The bot only acts on the first close beyond the level. If price has already run
+far past it (more than half an ATR, explained next), the bot considers the move
+already gone and skips it rather than chase.
 
-**အချုပ်ပြောရရင်** အခုကြုံခဲ့ရတဲ့ အရှုံးတွေဟာ ကျွန်တော်တို့ သုံးနေတဲ့ မူလဗျူဟာ မှားယွင်းနေလို့ မဟုတ်ဘဲ၊ ကာကွယ်ရေးစနစ်တွေ အလုပ်မလုပ်တော့တာနဲ့ အရှုံးကို ရပ်တန့်မယ့် စည်းမျဉ်း မရှိခဲ့လို့ ဖြစ်ပါတယ်။ ကျွန်တော်တို့ရဲ့ "ဈေးကွက်ငြိမ်နေချိန်မှာပဲ လုပ်မယ်" ဆိုတဲ့ ဗျူဟာက မှန်ကန်နေဆဲပါ။ အခုဆိုရင် လုံခြုံရေးစနစ်တွေ အားလုံး ပြန်ဖွင့်ထားပြီး၊ Error တွေ အကုန်ပြင်ဆင်ပြီးဖြစ်သလို၊ Bot ကိုလည်း "မှတ်ဉာဏ်" ထည့်ပေးလိုက်ပြီ ဖြစ်တဲ့အတွက် အရင်လို အမှားမျိုး ထပ်ဖြစ်တော့မှာ မဟုတ်ပါဘူး။
+### Step 3: How far away does the safety stop go? (measuring with ATR)
+
+ATR is a standard measure of how much a market typically moves in one candle.
+Think of it as the market's normal step size. The bot places its stop-loss at
+2 ATR away from the entry price. A calm coin gets a tight stop, a wild coin gets
+a wide one, so the stop sits outside normal noise in both cases.
+
+### Step 4: How much money goes in? (position sizing)
+
+The bot risks 3 percent of the current account balance per trade. Risk means the
+amount lost if the stop is hit, not the position size. The position size is
+calculated backwards from the stop distance so that a stop-out always costs about
+the same 3 percent.
+
+Because the percentage is taken from the live balance, the dollar risk shrinks
+automatically during losing streaks. Ten straight losses cost about 26 percent of
+the account, not 30, and the account can never be wiped out by any streak.
+
+Additional limits on every entry: at most 3 positions open at the same time, one
+per coin; a position can never be larger than the account's margin cap; and the
+position is shrunk if the order book on that coin is too thin to exit cleanly.
+
+### Step 5: The entry itself
+
+The bot places a limit order at the current price. If it does not fill within 30
+seconds, the unfilled part is escalated to a market order. The moment the position
+exists, the stop-loss is placed directly on the exchange as a standing order. That
+matters: the stop lives at the exchange, not inside the bot, so the position stays
+protected even if the bot or the server goes down.
+
+### Step 6: Managing the trade (this is where the money is made)
+
+There is no take-profit order. Trends are occasionally enormous and a take-profit
+would cut them short. Instead the trade can end in exactly four ways:
+
+1. The initial stop. The breakout failed. Loss: about 1R, meaning one unit of the
+   3 percent risk. This is the most common outcome and it is fine.
+
+2. The ratchet ladder. As the trade moves into profit, the stop-loss climbs behind
+   it in fixed steps and never moves back:
+   - at +1.3R profit, the stop moves to the entry price. From here the trade
+     cannot lose anymore.
+   - at +2.3R the stop locks in +1R of profit.
+   - at +3.2R it locks +2R, and so on up the ladder, one R at a time.
+   A winner that reverses still pays out whatever was locked. A winner that keeps
+   trending is never interrupted.
+
+3. The trend flip. If the 4-hour trend gate turns fully against the position, the
+   bot closes it at market without waiting for the stop. The reason to be in the
+   trade no longer exists.
+
+4. The time stop. If 20 candles pass (about three days) and the trade never
+   reached even half an R of profit, the bot exits. A breakout that goes nowhere
+   for days was a false one, and the money is freed for the next attempt.
+
+Every open position is checked every 10 minutes. A watchdog confirms the stop
+order still exists on the exchange and replaces it if anything is missing.
+
+### Step 7: The emergency brake (circuit breaker)
+
+The bot keeps a record of its recent results. If one coin-and-direction combination
+takes an extreme run of losses, it is benched for 24 hours. If the whole account
+takes losses far beyond anything the strategy produced in testing, all trading
+pauses for 48 hours. These thresholds are set wide on purpose: normal losing
+streaks are part of the plan and do not trigger anything. The brake exists to catch
+malfunctions, not drawdowns.
+
+## What the testing showed
+
+The rules above were simulated over 27 months of real Hyperliquid price history,
+with fees and slippage included and with deliberately pessimistic assumptions
+wherever the data was ambiguous. The headline results:
+
+- 401 trades, about 16 per month across the whole universe.
+- Around 35 percent of trades won. Losers were held for a day or two on average,
+  winners for about four days, and the largest winner ran for over four months.
+- Total result: +91R. At 3 percent risk on a small account that compounds
+  meaningfully, and the same rules scale to any account size.
+- Worst peak-to-valley drawdown along the way: about 21R. Losing streaks of 5 to
+  8 trades happened regularly and were always recovered within the tested period.
+- Both halves of the test period were profitable on their own, and the result held
+  up across a grid of nearby parameter settings, which is evidence the rules are
+  not tuned to one lucky configuration.
+
+Two honest caveats. First, a large share of the tested profit came from a small
+number of huge trend trades, roughly one per year. Months can pass where the bot
+only grinds small losses and small wins while waiting for the next one. Patience
+is a structural part of this strategy, not a flaw. Second, a backtest is history,
+not prophecy. The future can be worse. The sizing rules exist precisely so that a
+worse future is survivable.
+
+## What it costs to run
+
+- Market data comes free from the exchange's public API.
+- All analysis is computed locally. There are no AI or data subscription costs.
+- The only recurring costs are exchange trading fees, roughly one percent of
+  account value per month at the tested trade frequency (already included in all
+  backtest figures above), and a small server.
+
+## Where to watch it
+
+The private dashboard shows the live account, open positions, the decision log for
+every 4-hour cycle, and a radar view of how close each coin currently is to its
+breakout trigger. The complete archive of the retired AI era, with every trade and
+the reasons it was taken, stays available from the dashboard under "Grok era
+report" as a permanent before-and-after record.
+
+## Glossary
+
+- Candle: the price record of one fixed time block (here, 4 hours).
+- EMA: a moving average of price that weights recent candles more heavily.
+- ATR: the average size of one candle's price movement; the market's step size.
+- Breakout: a close beyond the highest high or lowest low of a lookback window.
+- R: one unit of planned risk. A trade risking 3 percent that loses 1R lost
+  3 percent; a trade that makes 4R made 12 percent.
+- Stop-loss: a standing exchange order that closes the position at a set price.
+- Drawdown: the drop from an account's peak value to its lowest point after it.
