@@ -253,3 +253,5 @@ Scratches and breakevens don't count — only losses worse than −0.5R.
 5. **Never cut the winners** — just keep raising the floor beneath them.
 
 > Most trades will lose small. A few will win big. **The big ones pay for everything.**
+
+![Trading Timeline](./timeline.jpg)
