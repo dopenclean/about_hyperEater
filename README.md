@@ -1,4 +1,4 @@
-# 🤖 HyperEater — The Complete Rulebook
+# HyperEater — The Complete Rulebook
 
 ## First, one word you need: **R**
 
