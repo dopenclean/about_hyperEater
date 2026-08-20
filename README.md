@@ -1,189 +1,255 @@
-# How HyperEater Trades, In Plain English
+# 🤖 HyperEater — The Complete Rulebook
 
-## The one-line version
+## First, one word you need: **R**
 
-HyperEater is a fully mechanical trend-following bot. It does not predict anything
-and it does not use any AI. It watches 21 major crypto markets, waits for a price
-breakout in the direction of an established trend, buys or sells with a small fixed
-risk, cuts losers quickly, and lets the rare big winner run for days or weeks.
+**R = the money you agree to lose if the trade goes wrong.**
 
-Every rule is written in code, tested against 27 months of real market history, and
-applied the same way every time. No opinions, no news reading, no gut feeling.
+If you decide "I'm willing to lose $3 on this trade," then **1R = $3** for that trade.
 
-## Why we trade this way
+- Trade makes $6? That's **+2R**
+- Trade loses $3? That's **−1R**
 
-We ran an AI-driven version of this bot for eleven weeks with real money. We kept a
-complete record of every decision it made. The verdict was clear: the AI picked
-direction no better than a coin flip, and it cost real money in API fees on top of
-the trading losses. The full record is preserved in the dashboard under
-"Grok era report", every trade, every reason, every dollar.
+Everything below is measured in R, because it lets you compare a $56 ZEC trade with a $500 Bitcoin trade fairly.
 
-Before replacing it, we tested the new mechanical rules against 27 months of price
-history on the same exchange, including all fees and slippage. Only after the rules
-passed that test did we switch the bot over. This document explains those rules.
+---
 
-## The core idea
+## What the bot is actually trying to do
 
-Crypto markets spend most of their time going nowhere. Once in a while, a market
-starts a real trend and moves a very long way. Nobody can reliably predict when
-that happens. So instead of predicting, the bot does this:
+Most of the time, prices wobble sideways and go nowhere. Once in a while, a coin starts a **big long run** and moves a very long way.
 
-1. It takes a small, cheap position every time a market pushes into new ground.
-2. If the push fails, it loses a small, known amount and moves on.
-3. If the push turns into a real trend, it stays in and follows it as far as it goes.
+Nobody can predict when. So the bot doesn't try. Instead:
 
-Most attempts fail. That is expected and priced in. Roughly one trade in three or
-four works, and the winners are much larger than the losers. One or two exceptional
-trends a year carry most of the profit. The job of every rule below is either to
-find those trends or to keep the failed attempts cheap.
+1. Take lots of **small, cheap bets** when a coin starts moving
+2. Most fail → lose a small, known amount → move on
+3. A few turn into big runs → **stay in and ride them for weeks**
 
-## Step by step: what the bot does every four hours
+> **Most trades lose. That's the plan, not a bug.** Roughly 1 in 3 wins, but the winners are much bigger than the losers.
 
-The bot works on the 4-hour candle clock. A candle is just the price record of one
-4-hour block. Candles close at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 UTC.
-About two minutes after each close, the bot runs this checklist on all 21 coins.
+---
 
-### Step 1: Is there a trend at all? (the trend gate)
+## The playing field
 
-The bot compares the current price with two moving averages: the average price of
-the last 50 candles and the last 200 candles (called EMAs, averages that weight
-recent prices more).
+**21 coins it's allowed to touch:**
 
-- Price above the 200 average, and the 50 average also above the 200 average:
-  the market is in an uptrend. The bot is only allowed to buy.
-- Price below the 200 average, and the 50 also below the 200: downtrend.
-  The bot is only allowed to sell short.
-- Anything mixed: no trend. The bot does nothing with that coin.
+`BTC` `ETH` `HYPE` `SOL` `ZEC` `XRP` `NEAR` `PUMP` `AAVE` `FARTCOIN` `SUI` `XPL` `WLD` `DOGE` `BNB` `BCH` `ADA` `VVV` `ENA` `MON` `TAO`
 
-This single rule keeps the bot from fighting the market. It never buys into a
-falling market and never shorts a rising one.
+**The clock:** the bot works in **4-hour blocks**. It wakes up 2 minutes after each block ends and checks all 21 coins.
 
-### Step 2: Is the market breaking into new ground? (the breakout trigger)
+Blocks end at **00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC**.
 
-Within an uptrend, the bot waits for the candle to close above the highest price
-of the previous 55 candles, which is roughly the last nine days. Closing above
-that level means the market just did something it could not do for nine days.
-That is the footprint of real buying pressure, and it is how big trends start.
-For downtrends the rule is mirrored: a close below the 55-candle low.
+---
 
-The bot only acts on the first close beyond the level. If price has already run
-far past it (more than half an ATR, explained next), the bot considers the move
-already gone and skips it rather than chase.
+# PART 1 — Deciding to buy
 
-### Step 3: How far away does the safety stop go? (measuring with ATR)
+### Rule 1 · Which way is the coin going?
 
-ATR is a standard measure of how much a market typically moves in one candle.
-Think of it as the market's normal step size. The bot places its stop-loss at
-2 ATR away from the entry price. A calm coin gets a tight stop, a wild coin gets
-a wide one, so the stop sits outside normal noise in both cases.
+The bot draws two lines on the chart: the **average price of the last 50 blocks**, and the **last 200 blocks**.
 
-### Step 4: How much money goes in? (position sizing)
+| What it sees | What it means | What it's allowed to do |
+|---|---|---|
+| Price above the 200-line, **and** 50-line above 200-line | Going **up** | **Only buy** |
+| Price below the 200-line, **and** 50-line below 200-line | Going **down** | **Only sell short** |
+| Anything mixed | No clear direction | **Do nothing** |
 
-The bot risks 3 percent of the current account balance per trade. Risk means the
-amount lost if the stop is hit, not the position size. The position size is
-calculated backwards from the stop distance so that a stop-out always costs about
-the same 3 percent.
+> **Why:** it never bets against the direction things are already moving.
 
-Because the percentage is taken from the live balance, the dollar risk shrinks
-automatically during losing streaks. Ten straight losses cost about 26 percent of
-the account, not 30, and the account can never be wiped out by any streak.
+### Rule 2 · Wait for it to break new ground
 
-Additional limits on every entry: at most 3 positions open at the same time, one
-per coin; a position can never be larger than the account's margin cap; and the
-position is shrunk if the order book on that coin is too thin to exit cleanly.
+Being in an uptrend isn't enough. The bot waits until the price closes **higher than it has been for the last 55 blocks** — that's about **9 days**.
 
-### Step 5: The entry itself
+Going up? → must close above the **highest price of the last 9 days**
+Going down? → must close below the **lowest price of the last 9 days**
 
-The bot places a limit order at the current price. If it does not fill within 30
-seconds, the unfilled part is escalated to a market order. The moment the position
-exists, the stop-loss is placed directly on the exchange as a standing order. That
-matters: the stop lives at the exchange, not inside the bot, so the position stays
-protected even if the bot or the server goes down.
+> **Why:** doing something it couldn't do for 9 days is the footprint of a real move starting.
 
-### Step 6: Managing the trade (this is where the money is made)
+### Rule 3 · Don't chase
 
-There is no take-profit order. Trends are occasionally enormous and a take-profit
-would cut them short. Instead the trade can end in exactly four ways:
+If the price has **already run far past** that breakout point, the bot skips it. The move is already gone.
 
-1. The initial stop. The breakout failed. Loss: about 1R, meaning one unit of the
-   3 percent risk. This is the most common outcome and it is fine.
+"Far past" = more than **half a normal candle's size** beyond the line.
 
-2. The ratchet ladder. As the trade moves into profit, the stop-loss climbs behind
-   it in fixed steps and never moves back:
-   - at +1.3R profit, the stop moves to the entry price. From here the trade
-     cannot lose anymore.
-   - at +2.3R the stop locks in +1R of profit.
-   - at +3.2R it locks +2R, and so on up the ladder, one R at a time.
-   A winner that reverses still pays out whatever was locked. A winner that keeps
-   trending is never interrupted.
+It checks this **twice** — once when the signal appears, and again right before actually placing the order, in case price ran away in between.
 
-3. The trend flip. If the 4-hour trend gate turns fully against the position, the
-   bot closes it at market without waiting for the stop. The reason to be in the
-   trade no longer exists.
+---
 
-4. The time stop. If 20 candles pass (about three days) and the trade never
-   reached even half an R of profit, the bot exits. A breakout that goes nowhere
-   for days was a false one, and the money is freed for the next attempt.
+# PART 2 — How much money to put in
 
-Every open position is checked every 10 minutes. A watchdog confirms the stop
-order still exists on the exchange and replaces it if anything is missing.
+### Rule 4 · Where the safety stop goes
 
-### Step 7: The emergency brake (circuit breaker)
+The bot measures the coin's **normal step size** (how much it typically moves in one 4-hour block). Then it puts the stop **2 normal steps away** from the entry price.
 
-The bot keeps a record of its recent results. If one coin-and-direction combination
-takes an extreme run of losses, it is benched for 24 hours. If the whole account
-takes losses far beyond anything the strategy produced in testing, all trading
-pauses for 48 hours. These thresholds are set wide on purpose: normal losing
-streaks are part of the plan and do not trigger anything. The brake exists to catch
-malfunctions, not drawdowns.
+- Calm coin → tight stop
+- Wild coin → wide stop
 
-## What the testing showed
+> **Why:** the stop sits outside normal noise for *every* coin, without you having to guess.
 
-The rules above were simulated over 27 months of real Hyperliquid price history,
-with fees and slippage included and with deliberately pessimistic assumptions
-wherever the data was ambiguous. The headline results:
+### Rule 5 · The bet size
 
-- 401 trades, about 16 per month across the whole universe.
-- Around 35 percent of trades won. Losers were held for a day or two on average,
-  winners for about four days, and the largest winner ran for over four months.
-- Total result: +91R. At 3 percent risk on a small account that compounds
-  meaningfully, and the same rules scale to any account size.
-- Worst peak-to-valley drawdown along the way: about 21R. Losing streaks of 5 to
-  8 trades happened regularly and were always recovered within the tested period.
-- Both halves of the test period were profitable on their own, and the result held
-  up across a grid of nearby parameter settings, which is evidence the rules are
-  not tuned to one lucky configuration.
+**The bot risks 3% of the account on every trade.**
 
-Two honest caveats. First, a large share of the tested profit came from a small
-number of huge trend trades, roughly one per year. Months can pass where the bot
-only grinds small losses and small wins while waiting for the next one. Patience
-is a structural part of this strategy, not a flaw. Second, a backtest is history,
-not prophecy. The future can be worse. The sizing rules exist precisely so that a
-worse future is survivable.
+Important: 3% is **what it can lose**, not what it puts in.
 
-## What it costs to run
+The bot works backwards:
+> *"If I'm willing to lose $3, and my stop is 5% away, then I should buy $60 worth."*
 
-- Market data comes free from the exchange's public API.
-- All analysis is computed locally. There are no AI or data subscription costs.
-- The only recurring costs are exchange trading fees, roughly one percent of
-  account value per month at the tested trade frequency (already included in all
-  backtest figures above), and a small server.
+Because it's a **percentage of the current balance**, the dollar amount shrinks automatically when you're losing. 10 losses in a row costs about 26% of the account, not 30%. **A losing streak can never wipe you out.**
 
-## Where to watch it
+### Rule 6 · The size ceiling
 
-The private dashboard shows the live account, open positions, the decision log for
-every 4-hour cycle, and a radar view of how close each coin currently is to its
-breakout trigger. The complete archive of the retired AI era, with every trade and
-the reasons it was taken, stays available from the dashboard under "Grok era
-report" as a permanent before-and-after record.
+A position can never be worth more than **100% of your account value**, no matter what the math says.
 
-## Glossary
+*(It uses 20x leverage but only commits 5% of the account as margin — 5% × 20 = 100%.)*
 
-- Candle: the price record of one fixed time block (here, 4 hours).
-- EMA: a moving average of price that weights recent candles more heavily.
-- ATR: the average size of one candle's price movement; the market's step size.
-- Breakout: a close beyond the highest high or lowest low of a lookback window.
-- R: one unit of planned risk. A trade risking 3 percent that loses 1R lost
-  3 percent; a trade that makes 4R made 12 percent.
-- Stop-loss: a standing exchange order that closes the position at a set price.
-- Drawdown: the drop from an account's peak value to its lowest point after it.
+### Rule 7 · Don't be too big for the room
+
+If not many people are buying and selling that coin right now, the bot **shrinks the position** so it can always get out cleanly.
+
+Limit: never more than **a quarter** of the visible orders on the book.
+
+---
+
+# PART 3 — Getting in
+
+### Rule 8 · Maximum 3 trades at once
+
+Never more than **3 open positions**, and **never two on the same coin**.
+
+### Rule 9 · Avoid the fee moment
+
+The exchange charges a fee at **00:00, 08:00 and 16:00 UTC**. The bot won't open a trade within **30 minutes** of those times.
+
+It **waits** for the window to pass — it doesn't cancel the trade.
+
+### Rule 10 · How the order is placed
+
+1. Places a normal order at the current price
+2. If nobody fills it within **30 seconds** → takes whatever price is available
+3. **The moment the trade exists, the stop-loss is placed at the exchange**
+
+> **Why that last part matters:** the stop lives *at the exchange*, not inside the bot. If your server dies, your internet dies, or the bot crashes — **your stop still works.**
+
+**There is no take-profit order.** Deliberately. See Part 4.
+
+---
+
+# PART 4 — Getting out
+
+There are exactly **four** ways a trade ends.
+
+### 🚪 Exit 1 · The stop is hit
+
+The move failed. Lose about **1R**. This is the most common ending and it's completely fine.
+
+### 🚪 Exit 2 · The ratchet ladder
+
+As the trade makes money, the stop **climbs up behind it**. It **only ever moves up — never back down.**
+
+| Price climbs to | Stop jumps to | You now can't make less than |
+|---|---|---|
+| **+0.8R** | +0.5R | **+0.5R** |
+| **+2.5R** | +1R | **+1R** |
+| **+3.5R** | +2R | **+2R** |
+| **+4.5R** | +3R | **+3R** |
+| **+5.5R** | +4R | **+4R** |
+| **+6.5R** | +5R | **+5R** |
+| **+7.5R** | +6R | **+6R** |
+
+The rule behind it: **the stop trails 1.5R behind** — except the first step, which trails only 0.3R.
+
+> **Tight at the bottom** → most trades die young, so grab *something*.
+> **Loose at the top** → a real run must not get shaken out by a normal dip.
+
+**This is not a take-profit.** It never closes you when price goes **up** — only when price comes **down**. Your upside stays unlimited.
+
+### 🚪 Exit 3 · The reason disappeared
+
+If the trend (Rule 1) flips **fully to the opposite direction**, the bot closes immediately at market.
+
+> **Why:** you bought because it was going up. It's now going down. The reason is gone.
+
+### 🚪 Exit 4 · It's not going anywhere
+
+Three separate patience rules. **A trade is never punished for being old — only for being slow.**
+
+**4a · Gave it back**
+Was up **1.25R or more**, and has now sunk to **38% or less** of its best point → close it.
+
+*Example: went to +2.2R, now at +0.8R → done.*
+
+**4b · The 3-day check** *(20 blocks)*
+Not up at least **+0.8R** by now? → close it.
+
+**4c · The 8-day check** *(50 blocks)*
+Not up at least **+1.8R** by now? → close it.
+
+> **Why the bar rises:** you only have 3 slots. A trade sitting flat for a week is blocking a slot that could hold the next big run.
+>
+> ⚠️ **There is no "close after X days" rule** — on purpose. The best trade ever tested ran **132 days**. If a trade is genuinely climbing, it's left alone forever.
+
+---
+
+# PART 5 — The safety net
+
+### Rule 11 · The guard checks every 10 minutes
+
+Every 10 minutes, on every open trade, the bot confirms **the stop order still exists at the exchange**. If it's missing, it puts it back.
+
+If it **cannot** place a stop for any reason → it **closes the position immediately**. It will never knowingly hold a position with no stop.
+
+### Rule 12 · Size double-check
+
+If a fill comes back **bigger than intended** (which can happen in fast markets), the bot **immediately sells off the extra** so your real risk matches your planned risk.
+
+It also has protection against accidentally opening the trade **twice** if an order fills at the same moment it's being cancelled.
+
+### Rule 13 · The emergency brake
+
+| Scope | Trigger | What happens |
+|---|---|---|
+| One coin + direction | Last **6** trades add up to **−5.5R** | That combo benched **24 hours** |
+| Whole account | Last **15** trades add up to **−14R** | **Everything pauses 48 hours** |
+
+Scratches and breakevens don't count — only losses worse than −0.5R.
+
+> ⚠️ **These are set deliberately WIDE.** Normal losing streaks of 5–8 trades are expected and will **not** trip them. This brake exists to catch a **malfunction** — broken data, runaway re-entry — not to stop a bad week.
+
+---
+
+# 📋 The whole thing on one page
+
+| Setting | Value |
+|---|---|
+| Coins watched | 21 |
+| Chart timeframe | 4 hours |
+| Trend lines | 50 and 200 blocks |
+| Breakout window | 55 blocks (~9 days) |
+| Don't-chase limit | 0.5 × normal candle size |
+| Stop distance | 2 × normal candle size |
+| **Risk per trade** | **3% of account** |
+| Max position value | 100% of account |
+| Leverage | 20x cross |
+| Max order book share | 25% |
+| **Max open trades** | **3** (one per coin) |
+| No-trade window | ±30 min of 00:00 / 08:00 / 16:00 UTC |
+| Order fill wait | 30 seconds, then market |
+| Take-profit | **none** — by design |
+| **Ratchet ladder** | **0.8→0.5, 2.5→1, 3.5→2, 4.5→3, 5.5→4, 6.5→5, 7.5→6** |
+| Give-back exit | peaked ≥1.25R, fell to ≤38% of peak |
+| 3-day check | must be ≥ +0.8R |
+| 8-day check | must be ≥ +1.8R |
+| Hard time limit | **none** — by design |
+| Stop-order guard | every 10 minutes |
+| Coin brake | 6 trades ≤ −5.5R → 24h bench |
+| Account brake | 15 trades ≤ −14R → 48h pause |
+
+---
+
+## 🎯 The whole strategy in five sentences
+
+1. Only bet **with** the direction things are already moving.
+2. Enter when a coin does something it **couldn't do for 9 days**.
+3. Risk a **small, fixed slice** every time, so no single loss matters.
+4. **Cut the failures fast** — by stop, by trend flip, or for being too slow.
+5. **Never cut the winners** — just keep raising the floor beneath them.
+
+> Most trades will lose small. A few will win big. **The big ones pay for everything.**
